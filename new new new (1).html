@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Government Subsidy Calculator | Central & Maharashtra</title>
+    
+    <!-- Chosen Palette: Modern Neutrals (Stone, Gray, Slate) with a soft Teal accent for interactive elements. -->
+    <!-- Application Structure Plan: A two-part, task-oriented single-page layout. The initial view is a visually engaging hero section ("home page") with an introduction and a call-to-action. Clicking "Start Calculating" smoothly scrolls the user down to the second part, which contains the interactive calculator form. The results section (stats, charts, scheme cards) is dynamically revealed after form submission. This design separates the passive introduction from the active task, creating a more professional and guided user experience. A modular approach is used to present key features before the user engages with the tool. -->
+    <!-- Visualization & Content Choices: 
+        - Report Info: Tool's purpose -> Goal: Engage user -> Viz/Method: Hero section with text & image placeholder -> Interaction: Scroll-to-action button -> Justification: Creates a professional "homepage" feel and guides the user to the core functionality.
+        - Report Info: Key tool features -> Goal: Build trust & highlight value -> Viz/Method: Icons (Unicode) with brief text -> Interaction: None -> Justification: Provides a quick, scannable summary of the tool's benefits.
+        - Report Info: Complex eligibility rules -> Goal: Simplify -> Viz/Method: Interactive HTML Form -> Interaction: User input -> Justification: The most direct way for users to provide their profile data for automated matching.
+        - Report Info: List of 30+ schemes -> Goal: Present personalized results -> Viz/Method: Dynamic HTML Cards -> Interaction: Click for details, Filter by category -> Justification: Cards are scannable and visually organized. Filtering helps manage a large number of results.
+        - Report Info: Scheme categories -> Goal: Provide an overview -> Viz/Method: Chart.js Donut Chart -> Interaction: Hover for details, Click to filter -> Justification: A visual summary of the types of aid available. Interactivity links it directly to the results, enhancing usability.
+        - Report Info: Detailed scheme benefits & application process -> Goal: Inform & guide -> Viz/Method: HTML Modal Window with AI assistant -> Interaction: Appears on card click, AI call -> Justification: Provides in-depth information without navigating away, and the AI simplifies complex text.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f9fafb; /* gray-50 */
+            color: #334155; /* slate-700 */
+        }
+        .container-bg {
+            background-color: #ffffff;
+            border-radius: 1.5rem; /* rounded-3xl */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .card-shadow {
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        }
+        .card-shadow-hover:hover {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            transform: translateY(-3px);
+        }
+        .form-input, .form-select {
+            border: 1px solid #cbd5e1; /* slate-300 */
+            background-color: #fefefe; /* near white */
+            transition: all 0.2s ease-in-out;
+        }
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: #14b8a6; /* teal-500 */
+            box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.25);
+        }
+        .btn-primary {
+            background-color: #14b8a6; /* teal-500 */
+            color: #ffffff;
+            transition: background-color 0.3s ease-in-out, transform 0.2s ease-in-out;
+        }
+        .btn-primary:hover {
+            background-color: #0d9488; /* teal-600 */
+            transform: translateY(-1px);
+        }
+        .btn-secondary {
+            background-color: #64748b; /* slate-500 */
+            color: #ffffff;
+            transition: background-color 0.3s ease-in-out, transform 0.2s ease-in-out;
+        }
+        .btn-secondary:hover {
+            background-color: #475569; /* slate-600 */
+            transform: translateY(-1px);
+        }
+        .modal-overlay {
+            background-color: rgba(0, 0, 0, 0.6);
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 350px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .loader {
+            border: 4px solid #e2e8f0; /* slate-200 */
+            border-top: 4px solid #14b8a6; /* teal-500 */
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @media print {
+            body {
+                background-color: #fff;
+                color: #000;
+            }
+            .container-bg, .card-shadow, .card-shadow-hover:hover {
+                box-shadow: none;
+                border: 1px solid #eee;
+            }
+            #hero-section, #features-section, #calculator-section, #filters, .btn-primary, .btn-secondary, .modal-overlay, #loader-container, #ai-summary-section {
+                display: none !important;
+            }
+            #results-section {
+                display: block !important;
+                margin-top: 0 !important;
+            }
+            #results-list {
+                display: grid !important;
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
+                gap: 1.5rem !important;
+            }
+            .scheme-card {
+                page-break-inside: avoid;
+                margin-bottom: 1rem;
+                border: 1px solid #ccc;
+                padding: 1rem;
+            }
+            .chart-container {
+                display: none !important;
+            }
+            .no-schemes-message {
+                display: block !important;
+                border: none;
+                box-shadow: none;
+            }
+        }
+    </style>
+</head>
+<body class="text-slate-700">
+
+    <div class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        
+        <!-- Hero Section -->
+        <header id="hero-section" class="flex flex-col md:flex-row items-center justify-between p-8 md:p-12 lg:p-16 bg-white rounded-3xl shadow-xl mb-12">
+            <div class="md:w-1/2 md:pr-12 text-center md:text-left mb-8 md:mb-0">
+                <h1 class="text-4xl lg:text-6xl font-bold text-gray-900 leading-tight">Your Guide to Government Subsidies</h1>
+                <p class="mt-4 text-lg text-gray-600">Instantly find and understand the Central and Maharashtra government schemes you're eligible for with our smart calculator and AI assistant.</p>
+                <div class="mt-8">
+                    <a href="#calculator-section" class="btn-primary inline-block py-3 px-8 rounded-lg text-lg font-semibold">Start Calculating</a>
+                </div>
+            </div>
+            <div class="md:w-1/2">
+                <img src="https://placehold.co/800x600/a8a29e/ffffff?text=Empowering+You" alt="Illustration of a person standing next to a finance chart, representing financial empowerment." class="rounded-2xl shadow-lg w-full">
+            </div>
+        </header>
+
+        <!-- Features Section -->
+        <section id="features-section" class="py-12">
+            <h2 class="text-3xl font-bold text-center text-slate-800 mb-10">Why Use This Tool?</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="text-center container-bg p-6 rounded-2xl">
+                    <span class="text-5xl text-teal-500">&#x1F50E;</span> <!-- Magnifying Glass Icon -->
+                    <h3 class="text-xl font-bold mt-4 text-slate-800">Personalized Results</h3>
+                    <p class="mt-2 text-slate-600">Get a curated list of schemes based on your unique profile in a matter of seconds.</p>
+                </div>
+                <div class="text-center container-bg p-6 rounded-2xl">
+                    <span class="text-5xl text-teal-500">&#x1F916;</span> <!-- Robot Face Icon -->
+                    <h3 class="text-xl font-bold mt-4 text-slate-800">AI Assistant</h3>
+                    <p class="mt-2 text-slate-600">Ask our AI assistant for simple, jargon-free explanations of any scheme to help you understand it better.</p>
+                </div>
+                <div class="text-center container-bg p-6 rounded-2xl">
+                    <span class="text-5xl text-teal-500">&#x1F5A8;&#xFE0F;</span> <!-- Printer Icon -->
+                    <h3 class="text-xl font-bold mt-4 text-slate-800">Printable Summary</h3>
+                    <p class="mt-2 text-slate-600">Easily generate and print a summary of all your eligible schemes for offline reference.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Calculator Section -->
+        <section id="calculator-section" class="py-12">
+            <div class="container-bg p-6 md:p-8">
+                <h2 class="text-3xl font-bold text-slate-800 mb-6 text-center">Tell Us About Yourself</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div>
+                        <label for="state" class="block text-sm font-medium text-slate-700 mb-1">State of Residence</label>
+                        <select id="state" class="w-full p-2.5 rounded-lg text-base form-select">
+                            <option value="Maharashtra" selected>Maharashtra</option>
+                            <option value="Any">Any (Show all Central Schemes)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="annualIncome" class="block text-sm font-medium text-slate-700 mb-1">Annual Family Income (₹)</label>
+                        <input type="number" id="annualIncome" placeholder="e.g., 300000" class="w-full p-2.5 rounded-lg text-base form-input">
+                    </div>
+                    <div>
+                        <label for="age" class="block text-sm font-medium text-slate-700 mb-1">Age</label>
+                        <input type="number" id="age" placeholder="e.g., 35" class="w-full p-2.5 rounded-lg text-base form-input">
+                    </div>
+                     <div>
+                        <label for="gender" class="block text-sm font-medium text-slate-700 mb-1">Gender</label>
+                        <select id="gender" class="w-full p-2.5 rounded-lg text-base form-select">
+                            <option value="Any">Any</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="casteCategory" class="block text-sm font-medium text-slate-700 mb-1">Social Category</label>
+                        <select id="casteCategory" class="w-full p-2.5 rounded-lg text-base form-select">
+                            <option value="Any">Prefer not to say</option>
+                            <option value="General">General</option>
+                            <option value="SC">Scheduled Caste (SC)</option>
+                            <option value="ST">Scheduled Tribe (ST)</option>
+                            <option value="OBC">Other Backward Class (OBC)</option>
+                            <option value="EBC">Economically Backward Class (EBC)</option>
+                            <option value="DNT">Denotified Tribes (DNT)</option>
+                            <option value="VJNT">Vimukta Jati & Nomadic Tribes (VJNT)</option>
+                            <option value="SBC">Special Backward Class (SBC)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="disability" class="block text-sm font-medium text-slate-700 mb-1">Person with Disability (PwD)</label>
+                        <select id="disability" class="w-full p-2.5 rounded-lg text-base form-select">
+                            <option value="false">No</option>
+                            <option value="true">Yes</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="locationType" class="block text-sm font-medium text-slate-700 mb-1">Location Type</label>
+                        <select id="locationType" class="w-full p-2.5 rounded-lg text-base form-select">
+                            <option value="Any">Any</option>
+                            <option value="Rural">Rural</option>
+                            <option value="Urban">Urban</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="professionSector" class="block text-sm font-medium text-slate-700 mb-1">Profession / Sector</label>
+                        <select id="professionSector" class="w-full p-2.5 rounded-lg text-base form-select">
+                            <option value="Any">Any / Other</option>
+                            <option value="Farmer">Farmer</option>
+                            <option value="MSME">MSME / Small Business</option>
+                            <option value="Unorganized Sector">Unorganized Sector Worker</option>
+                            <option value="Student">Student</option>
+                            <option value="Entrepreneur">Entrepreneur</option>
+                            <option value="Construction Worker">Construction Worker</option>
+                        </select>
+                    </div>
+                    <div class="lg:col-span-3 md:col-span-2">
+                        <label for="otherCriteria" class="block text-sm font-medium text-slate-700 mb-1">Other Details (select all that apply)</label>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4" id="otherCriteriaCheckboxes">
+                            <div class="flex items-center">
+                                <input id="bpl" type="checkbox" value="BPL" class="h-4 w-4 text-teal-500 border-slate-300 rounded focus:ring-teal-500">
+                                <label for="bpl" class="ml-2 text-sm text-slate-700">Belong to BPL family</label>
+                            </div>
+                            <div class="flex items-center">
+                                <input id="firstHomeowner" type="checkbox" value="First-time homeowner" class="h-4 w-4 text-teal-500 border-slate-300 rounded focus:ring-teal-500">
+                                <label for="firstHomeowner" class="ml-2 text-sm text-slate-700">First-time homeowner</label>
+                            </div>
+                             <div class="flex items-center">
+                                <input id="landless" type="checkbox" value="Landless" class="h-4 w-4 text-teal-500 border-slate-300 rounded focus:ring-teal-500">
+                                <label for="landless" class="ml-2 text-sm text-slate-700">Landless Labourer</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-8 text-center">
+                    <button id="findSchemesBtn" class="btn-primary py-3 px-8 rounded-lg text-lg">
+                        Find Eligible Schemes
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Results Section -->
+        <section id="results-section" class="mt-12 hidden">
+            <h2 class="text-3xl font-bold text-center text-slate-800 mb-8">Your Eligible Schemes</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 text-center">
+                <div class="container-bg p-6">
+                    <p class="text-4xl font-bold text-teal-500" id="total-schemes">0</p>
+                    <p class="text-slate-600 mt-1">Total Eligible Schemes</p>
+                </div>
+                <div class="container-bg p-6">
+                    <p class="text-4xl font-bold text-teal-500" id="central-schemes">0</p>
+                    <p class="text-slate-600 mt-1">Central Schemes</p>
+                </div>
+                <div class="container-bg p-6">
+                    <p class="text-4xl font-bold text-teal-500" id="maharashtra-schemes">0</p>
+                    <p class="text-slate-600 mt-1">Maharashtra Schemes</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-1 container-bg p-6">
+                    <h3 class="text-xl font-bold text-slate-800 mb-4">Filter by Category</h3>
+                    <div id="filters" class="space-y-2"></div>
+                    <h3 class="text-xl font-bold text-slate-800 mt-8 mb-4">Eligible Scheme Categories Overview</h3>
+                    <div class="chart-container">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+                <div id="results-list" class="lg:col-span-2 space-y-6">
+                    <!-- Scheme cards will be injected here -->
+                </div>
+            </div>
+            
+            <div id="no-schemes-message" class="hidden text-center container-bg p-8">
+                <p class="text-xl font-semibold text-slate-700">No schemes found matching your criteria.</p>
+                <p class="text-slate-500 mt-2">Please try adjusting your selections for a broader search.</p>
+            </div>
+             <div id="loader-container" class="hidden flex justify-center items-center p-8">
+                <div class="loader"></div>
+                <p class="ml-4 text-slate-600">Finding schemes for you...</p>
+            </div>
+
+            <div class="mt-10 text-center">
+                <button id="printSummaryBtn" class="btn-secondary py-2.5 px-6 rounded-lg text-base">
+                    Print Summary
+                </button>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Modal Structure -->
+    <div id="schemeModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 modal-overlay">
+        <div class="container-bg rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto" id="modalContent">
+            <!-- Modal content will be injected here -->
+        </div>
+    </div>
+
+
+    <script>
+        const schemesData = [
+          {
+            "id": "pm_awas_yojana_urban_ews_lig", "name": "Pradhan Mantri Awas Yojana (PMAY-U) - EWS/LIG", "state": "Central", "category": "Housing",
+            "description": "Provides interest subsidy on home loans for Economically Weaker Sections (EWS) and Low-Income Groups (LIG) in urban areas.",
+            "eligibility": { "min_age": 18, "max_age": null, "min_income_annual": 0, "max_income_annual": 600000, "gender": "Any", "caste_category": ["Any"], "disability": false, "location_type": "Urban", "profession_sector": ["Any"], "other_criteria": ["First-time homeowner"] },
+            "benefit": { "type": "Subsidy", "amount_max": 267000, "percentage_max": 6.5, "details": "Up to 6.5% interest subsidy on loan up to Rs 6 Lakh for EWS/LIG." },
+            "link": "https://pmaymis.gov.in/"
+          },
+          {
+            "id": "pm_awas_yojana_urban_mig1", "name": "Pradhan Mantri Awas Yojana (PMAY-U) - MIG I", "state": "Central", "category": "Housing",
+            "description": "Provides interest subsidy on home loans for Middle-Income Group I (MIG I) in urban areas.",
+            "eligibility": { "min_age": 18, "max_age": null, "min_income_annual": 600001, "max_income_annual": 1200000, "gender": "Any", "caste_category": ["Any"], "disability": false, "location_type": "Urban", "profession_sector": ["Any"], "other_criteria": ["First-time homeowner"] },
+            "benefit": { "type": "Subsidy", "amount_max": 235068, "percentage_max": 4, "details": "Up to 4% interest subsidy on loan up to Rs 9 Lakh for MIG I." },
+            "link": "https://pmaymis.gov.in/"
+          },
+          {
+            "id": "pm_awas_yojana_urban_mig2", "name": "Pradhan Mantri Awas Yojana (PMAY-U) - MIG II", "state": "Central", "category": "Housing",
+            "description": "Provides interest subsidy on home loans for Middle-Income Group II (MIG II) in urban areas.",
+            "eligibility": { "min_age": 18, "max_age": null, "min_income_annual": 1200001, "max_income_annual": 1800000, "gender": "Any", "caste_category": ["Any"], "disability": false, "location_type": "Urban", "profession_sector": ["Any"], "other_criteria": ["First-time homeowner"] },
+            "benefit": { "type": "Subsidy", "amount_max": 230156, "percentage_max": 3, "details": "Up to 3% interest subsidy on loan up to Rs 12 Lakh for MIG II." },
+            "link": "https://pmaymis.gov.in/"
+          },
+          {
+            "id": "pm_kisan_samman_nidhi", "name": "PM Kisan Samman Nidhi (PM-KISAN)", "state": "Central", "category": "Agriculture",
+            "description": "Direct income support to all landholding farmer families.",
+            "eligibility": { "min_age": null, "max_age": null, "min_income_annual": 0, "max_income_annual": null, "gender": "Any", "caste_category": ["Any"], "disability": false, "location_type": "Any", "profession_sector": ["Farmer"], "other_criteria": ["Landholding Farmer Family"] },
+            "benefit": { "type": "Direct Benefit Transfer", "amount_max": 6000, "percentage_max": null, "details": "Rs 6000 per year in three equal installments." },
+            "link": "https://pmkisan.gov.in/"
+          },
+          {
+            "id": "pm_fasal_bima_yojana", "name": "Pradhan Mantri Fasal Bima Yojana (PMFBY)", "state": "Central", "category": "Agriculture",
+            "description": "Provides crop insurance against non-preventable natural risks.",
+            "eligibility": { "min_age": null, "max_age": null, "min_income_annual": 0, "max_income_annual": null, "gender": "Any", "caste_category": ["Any"], "disability": false, "location_type": "Any", "profession_sector": ["Farmer"], "other_criteria": [] },
+            "benefit": { "type": "Insurance", "amount_max": null, "percentage_max": null, "details": "Financial support in case of crop failure/low yield. Low premium rates." },
+            "link": "https://pmfby.gov.in/"
+          },
+          {
+            "id": "pm_mudra_yojana", "name": "PM Mudra Yojana", "state": "Central", "category": "Business",
+            "description": "Provides loans to micro and small enterprises for income-generating activities.",
+            "eligibility": { "min_age": 18, "max_age": null, "min_income_annual": 0, "max_income_annual": null, "gender": "Any", "caste_category": ["Any"], "disability": false, "location_type": "Any", "profession_sector": ["MSME", "Entrepreneur"], "other_criteria": [] },
+            "benefit": { "type": "Loan", "amount_max": 1000000, "percentage_max": null, "details": "Loans up to Rs 10 Lakh (Shishu: up to 50k, Kishore: 50k-5L, Tarun: 5L-10L)." },
+            "link": "https://www.mudra.org.in/"
+          },
+          {
+            "id": "stand_up_india_scheme", "name": "Stand-Up India Scheme", "state": "Central", "category": "Business",
+            "description": "Facilitates bank loans between Rs 10 lakh and Rs 1 Crore for setting up greenfield enterprises by women and SC/ST entrepreneurs.",
+            "eligibility": { "min_age": 18, "max_age": null, "min_income_annual": 0, "max_income_annual": null, "gender": "Female", "caste_category": ["SC", "ST"], "disability": false, "location_type": "Any", "profession_sector": ["Entrepreneur"], "other_criteria": [] },
+            "benefit": { "type": "Loan", "amount_max": 10000000, "percentage_max": null, "details": "Loans from Rs 10 Lakh to Rs 1 Crore, including working capital." },
+            "link": "https://www.standupmitra.in/"
+          },
+          {
+            "id": "ayushman_bharat_pm_jay", "name": "Ayushman Bharat (PM-JAY)", "state": "Central", "category": "Health",
+            "description": "Provides health cover of Rs 5 Lakh per family per year for secondary and tertiary care hospitalization.",
+            "eligibility": { "min_age": null, "max_age": null, "min_income_annual": 0, "max_income_annual": null, "gender": "Any", "caste_category": ["Any"], "disability": false, "location_type": "Any", "profession_sector": ["Any"], "other_criteria": ["SECC 2011 criteria", "BPL"] },
+            "benefit": { "type": "Insurance", "amount_max": 500000, "percentage_max": null, "details": "Rs 5 Lakh health cover per family per year." },
+            "link": "https://pmjay.gov.in/"
+          },
+          {
+            "id": "atal_pension_yojana", "name": "Atal Pension Yojana (APY)", "state": "Central", "category": "Pension",
+            "description": "Guaranteed pension for unorganized sector workers after 60 years of age.",
+            "eligibility": { "min_age": 18, "max_age": 40, "min_income_annual": 0, "max_income_annual": null, "gender": "Any", "caste_category": ["Any"], "disability": false, "location_type": "Any", "profession_sector": ["Unorganized Sector"], "other_criteria": ["Not an income tax payer"] },
+            "benefit": { "type": "Pension", "amount_max": 5000, "percentage_max": null, "details": "Guaranteed minimum pension of Rs 1000 to Rs 5000 per month after 60." },
+            "link": "https://www.npscra.nsdl.co.in/scheme-details-apy.php"
+          },
+          {
+            "id": "pm_matritva_vandana_yojana", "name": "Pradhan Mantri Matritva Vandana Yojana", "state": "Central", "category": "Women & Child",
+            "description": "Provides partial compensation for wage loss during pregnancy and childbirth.",
+            "eligibility": { "min_age": 19, "max_age": null, "min_income_annual": 0, "max_income_annual": 800000, "gender": "Female", "caste_category": ["Any"], "disability": false, "location_type": "Any", "profession_sector": ["Any"], "other_criteria": [] },
+            "benefit": { "type": "Direct Benefit Transfer", "amount_max": 6000, "percentage_max": null, "details": "Cash incentive of Rs 5000-6000 in installments." },
+            "link": "https://wcd.nic.in/schemes/pradhan-mantri-matru-vandana-yojana"
+          },
+          {
+            "id": "csis_education_loan", "name": "Central Sector Interest Subsidy Scheme (CSIS)", "state": "Central", "category": "Education",
+            "description": "Provides interest subsidy on education loans during the moratorium period for economically weaker sections.",
+            "eligibility": { "min_age": null, "max_age": null, "min_income_annual": 0, "max_income_annual": 450000, "gender": "Any", "caste_category": ["Any"], "disability": false, "location_type": "Any", "profession_sector": ["Student"], "other_criteria": [] },
+            "benefit": { "type": "Subsidy", "amount_max": null, "percentage_max": null, "details": "Full interest subsidy during moratorium period on education loans." },
+            "link": "https://www.education.gov.in/scholarships-education-loan-4-hi"
+          },
+          {
+            "id": "pm_yasasvi_scholarship", "name": "PM-YASASVI Scholarship Scheme", "state": "Central", "category": "Education",
+            "description": "Scholarship for OBC, EBC, and DNT students to pursue higher education.",
+            "eligibility": { "min_age": null, "max_age": null, "min_income_annual": 0, "max_income_annual": 250000, "gender": "Any", "caste_category": ["OBC", "EBC", "DNT"], "disability": false, "location_type": "Any", "profession_sector": ["Student"], "other_criteria": [] },
+            "benefit": { "type": "Scholarship", "amount_max": null, "percentage_max": null, "details": "Covers full tuition fee, living expenses, and allowances." },
+            "link": "https://scholarships.gov.in/"
+          },
+          {
+            "id": "national_overseas_scholarship_sc", "name": "National Overseas Scholarship (NOS)", "state": "Central", "category": "Education",
+            "description": "Financial assistance for pursuing Master's or Ph.D. abroad for SC, DNT, and other specified categories.",
+            "eligibility": { "min_age": null, "max_age": 35, "min_income_annual": 0, "max_income_annual": 800000, "gender": "Any", "caste_category": ["SC", "DNT"], "disability": false, "location_type": "Any", "profession_sector": ["Student"], "other_criteria": [] },
+            "benefit": { "type": "Scholarship", "amount_max": null, "percentage_max": null, "details": "Covers tuition fees, living expenses, and travel." },
+            "link": "https://nosmsje.gov.in/"
+          },
+          {
+            "id": "pmegp_scheme", "name": "Prime Minister's Employment Generation Programme (PMEGP)", "state": "Central", "category": "Business",
+            "description": "Provides financial assistance for setting up new micro-enterprises in non-farm sectors.",
+            "eligibility": { "min_age": 18, "max_age": null, "min_income_annual": 0, "max_income_annual": null, "gender": "Any", "caste_category": ["Any"], "disability": false, "location_type": "Any", "profession_sector": ["Entrepreneur"], "other_criteria": [] },
+            "benefit": { "type": "Subsidy", "amount_max": null, "percentage_max": 35, "details": "Margin money subsidy from 15% to 35% of the project cost." },
+            "link": "https://www.kvic.gov.in/pmegp.php"
+          },
+          {
+            "id": "mahatma_jyotirao_phule_jan_arogya_yojana", "name": "Mahatma Jyotirao Phule Jan Arogya Yojana (MJPJAY)", "state": "Maharashtra", "category": "Health",
+            "description": "Universal health coverage for all families in Maharashtra, providing cashless medical services.",
+            "eligibility": { "min_age": null, "max_age": null, "min_income_annual": 0, "max_income_annual": null, "gender": "Any", "caste_category": ["Any"], "disability": false, "location_type": "Any", "profession_sector": ["Any"], "other_criteria": [] },
+            "benefit": { "type": "Insurance", "amount_max": 500000, "percentage_max": null, "details": "Health coverage of Rs 5 Lakh per family per year on a floater basis." },
+            "link": "https://www.jeevandayee.gov.in/"
+          },
+          {
+            "id": "rajarshri_chhatrapati_shahu_maharaj_merit_scholarship", "name": "Rajarshri Chhatrapati Shahu Maharaj Merit Scholarship", "state": "Maharashtra", "category": "Education",
+            "description": "Scholarship for SC students scoring 75% or more in Class 10 for higher secondary education.",
+            "eligibility": { "min_age": null, "max_age": null, "min_income_annual": 0, "max_income_annual": null, "gender": "Any", "caste_category": ["SC"], "disability": false, "location_type": "Any", "profession_sector": ["Student"], "other_criteria": [] },
+            "benefit": { "type": "Scholarship", "amount_max": 3000, "percentage_max": null, "details": "Financial aid of Rs 300 per month for 10 months for 2 years." },
+            "link": "https://sjsa.maharashtra.gov.in/"
+          },
+          {
+            "id": "maharashtra_seed_money_scheme", "name": "Maharashtra Seed Money Scheme (SMS)", "state": "Maharashtra", "category": "Business",
+            "description": "Provides soft loans (seed money) to unemployed entrepreneurs to meet margin money requirements for bank loans.",
+            "eligibility": { "min_age": 18, "max_age": 50, "min_income_annual": 0, "max_income_annual": null, "gender": "Any", "caste_category": ["Any"], "disability": false, "location_type": "Any", "profession_sector": ["Entrepreneur"], "other_criteria": [] },
+            "benefit": { "type": "Loan", "amount_max": 375000, "percentage_max": null, "details": "Seed money assistance: 15% of project cost (20% for special categories) up to Rs 3.75 Lakh. Low interest rate." },
+            "link": "https://doingbusinessinmaharashtra.org/DIC_schemes.php"
+          },
+          {
+            "id": "shravanbal_seva_state_pension_scheme", "name": "Shravanbal Seva State Pension Scheme", "state": "Maharashtra", "category": "Pension",
+            "description": "Monthly pension for destitute senior citizens in Maharashtra.",
+            "eligibility": { "min_age": 65, "max_age": null, "min_income_annual": 0, "max_income_annual": 21000, "gender": "Any", "caste_category": ["Any"], "disability": false, "location_type": "Any", "profession_sector": ["Any"], "other_criteria": ["BPL"] },
+            "benefit": { "type": "Pension", "amount_max": 600, "percentage_max": null, "details": "Monthly pension of Rs 600." },
+            "link": "https://sjsa.maharashtra.gov.in/"
+          },
+          {
+            "id": "maharashtra_mahila_samridhi_yojana", "name": "Maharashtra Mahila Samridhi Yojana", "state": "Maharashtra", "category": "Women & Child",
+            "description": "Provides low-interest loans for women entrepreneurs from backward communities to promote self-employment.",
+            "eligibility": { "min_age": 18, "max_age": 55, "min_income_annual": 0, "max_income_annual": 300000, "gender": "Female", "caste_category": ["SC", "ST", "OBC", "SBC"], "disability": false, "location_type": "Any", "profession_sector": ["Entrepreneur"], "other_criteria": [] },
+            "benefit": { "type": "Loan", "amount_max": 140000, "percentage_max": null, "details": "Low-interest loans and skill training for women entrepreneurs." },
+            "link": "https://sjsa.maharashtra.gov.in/"
+          },
+          {
+            "id": "krishi_samruddhi_yojana", "name": "Krishi Samruddhi Yojana", "state": "Maharashtra", "category": "Agriculture",
+            "description": "Aims to empower farmers, enhance productivity, and promote sustainable farming.",
+            "eligibility": { "min_age": null, "max_age": null, "min_income_annual": 0, "max_income_annual": null, "gender": "Any", "caste_category": ["Any"], "disability": false, "location_type": "Any", "profession_sector": ["Farmer"], "other_criteria": [] },
+            "benefit": { "type": "Various", "amount_max": null, "percentage_max": null, "details": "Includes infrastructure development, technology adoption, and support for FPOs." },
+            "link": "https://mahadbt.maharashtra.gov.in/"
+          },
+          {
+            "id": "cm_majhi_ladki_bahin_yojana", "name": "CM Majhi Ladki Bahin Yojana", "state": "Maharashtra", "category": "Women & Child",
+            "description": "Aims to empower women by providing economic freedom and improving their health and nutrition.",
+            "eligibility": { "min_age": 21, "max_age": 65, "min_income_annual": 0, "max_income_annual": 250000, "gender": "Female", "caste_category": ["Any"], "disability": false, "location_type": "Any", "profession_sector": ["Any"], "other_criteria": [] },
+            "benefit": { "type": "Financial Assistance", "amount_max": 1500, "percentage_max": null, "details": "Financial benefit of ₹1,500 per month through Direct Benefit Transfer (DBT)." },
+            "link": "https://ladakibahin.maharashtra.gov.in/"
+          },
+          {
+            "id": "dr_panjabrao_deshmukh_hostel_allowance", "name": "Dr. Panjabrao Deshmukh Hostel Maintenance Allowance", "state": "Maharashtra", "category": "Education",
+            "description": "Provides financial assistance to students from EWS for hostel maintenance.",
+            "eligibility": { "min_age": null, "max_age": null, "min_income_annual": 0, "max_income_annual": 800000, "gender": "Any", "caste_category": ["Any"], "disability": false, "location_type": "Any", "profession_sector": ["Student"], "other_criteria": [] },
+            "benefit": { "type": "Allowance", "amount_max": 30000, "percentage_max": null, "details": "Hostel allowance from ₹2,000 to ₹30,000 per year depending on location and parent's occupation." },
+            "link": "https://mahadbt.maharashtra.gov.in/"
+          },
+          {
+            "id": "educational_assistance_construction_worker", "name": "Educational Assistance for Construction Worker's Children", "state": "Maharashtra", "category": "Education",
+            "description": "Provides financial assistance to children of registered construction workers for undergraduate degrees.",
+            "eligibility": { "min_age": null, "max_age": null, "min_income_annual": 0, "max_income_annual": null, "gender": "Any", "caste_category": ["Any"], "disability": false, "location_type": "Any", "profession_sector": ["Construction Worker"], "other_criteria": [] },
+            "benefit": { "type": "Financial Assistance", "amount_max": 20000, "percentage_max": null, "details": "₹20,000 per year for undergraduate degree courses." },
+            "link": "https://mahabocw.in/educational-assistance/"
+          },
+          {
+            "id": "mhada_scheme", "name": "Maharashtra Housing and Area Development Authority (MHADA) Scheme", "state": "Maharashtra", "category": "Housing",
+            "description": "Provides affordable housing through a lottery system for EWS, LIG, and MIG categories.",
+            "eligibility": { "min_age": 18, "max_age": null, "min_income_annual": 0, "max_income_annual": null, "gender": "Any", "caste_category": ["Any"], "disability": false, "location_type": "Any", "profession_sector": ["Any"], "other_criteria": [] },
+            "benefit": { "type": "Housing", "amount_max": null, "percentage_max": null, "details": "Access to affordable housing units in major cities. Income limits apply based on category (EWS, LIG, MIG)." },
+            "link": "https://housing.mhada.gov.in/"
+          },
+          {
+            "id": "cmegp_maharashtra", "name": "Chief Minister's Employment Generation Programme (CMEGP)", "state": "Maharashtra", "category": "Business",
+            "description": "State-level credit-linked subsidy scheme to generate employment through new self-employment ventures.",
+            "eligibility": { "min_age": 18, "max_age": 45, "min_income_annual": 0, "max_income_annual": null, "gender": "Any", "caste_category": ["Any"], "disability": false, "location_type": "Any", "profession_sector": ["Entrepreneur"], "other_criteria": [] },
+            "benefit": { "type": "Subsidy", "amount_max": null, "percentage_max": null, "details": "Subsidy on project cost for manufacturing and service sector units. Reservations for SC/ST and women." },
+            "link": "https://cmegp.gov.in/"
+          },
+           {
+            "id": "ignops_pension", "name": "Indira Gandhi National Old Age Pension Scheme (IGNOAPS)", "state": "Central", "category": "Pension",
+            "description": "Provides a monthly pension to citizens living Below Poverty Line (BPL) who are 60 years of age or above.",
+            "eligibility": { "min_age": 60, "max_age": null, "min_income_annual": 0, "max_income_annual": null, "gender": "Any", "caste_category": ["Any"], "disability": false, "location_type": "Any", "profession_sector": ["Any"], "other_criteria": ["BPL"] },
+            "benefit": { "type": "Pension", "amount_max": 500, "percentage_max": null, "details": "Central contribution of ₹200/month (60-79 years) or ₹500/month (80+ years). States may add to this amount." },
+            "link": "https://nsap.nic.in/nsap/public/users/ignoaps.do"
+          },
+          {
+            "id": "igndps_pension", "name": "Indira Gandhi National Disability Pension Scheme (IGNDPS)", "state": "Central", "category": "Pension",
+            "description": "Provides a monthly pension to BPL persons with severe or multiple disabilities.",
+            "eligibility": { "min_age": 18, "max_age": 79, "min_income_annual": 0, "max_income_annual": null, "gender": "Any", "caste_category": ["Any"], "disability": true, "location_type": "Any", "profession_sector": ["Any"], "other_criteria": ["BPL", "Severe or multiple disabilities (80% or more)"] },
+            "benefit": { "type": "Pension", "amount_max": 300, "percentage_max": null, "details": "Central contribution of ₹300 per month. States may add to this amount." },
+            "link": "https://nsap.nic.in/nsap/public/users/igndps.do"
+          },
+          {
+            "id": "ignwps_pension", "name": "Indira Gandhi National Widow Pension Scheme (IGNWPS)", "state": "Central", "category": "Pension",
+            "description": "Provides a monthly pension to BPL widows.",
+            "eligibility": { "min_age": 40, "max_age": 79, "min_income_annual": 0, "max_income_annual": null, "gender": "Female", "caste_category": ["Any"], "disability": false, "location_type": "Any", "profession_sector": ["Any"], "other_criteria": ["BPL", "Widow"] },
+            "benefit": { "type": "Pension", "amount_max": 300, "percentage_max": null, "details": "Central contribution of ₹300 per month. States may add to this amount." },
+            "link": "https://nsap.nic.in/nsap/public/users/ignwps.do"
+          },
+          {
+            "id": "nfb_scheme", "name": "National Family Benefit Scheme (NFBS)", "state": "Central", "category": "Social Welfare",
+            "description": "Provides a one-time lump sum financial assistance to bereaved BPL households on the death of the primary breadwinner.",
+            "eligibility": { "min_age": 18, "max_age": 59, "min_income_annual": 0, "max_income_annual": null, "gender": "Any", "caste_category": ["Any"], "disability": false, "location_type": "Any", "profession_sector": ["Any"], "other_criteria": ["BPL", "Death of primary breadwinner"] },
+            "benefit": { "type": "Financial Assistance", "amount_max": 20000, "percentage_max": null, "details": "One-time lump sum assistance of ₹20,000." },
+            "link": "https://nsap.nic.in/nsap/public/users/nfbs.do"
+          }
+        ];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const findSchemesBtn = document.getElementById('findSchemesBtn');
+            const resultsSection = document.getElementById('results-section');
+            const resultsList = document.getElementById('results-list');
+            const noSchemesMessage = document.getElementById('no-schemes-message');
+            const loaderContainer = document.getElementById('loader-container');
+            const filtersContainer = document.getElementById('filters');
+            const printSummaryBtn = document.getElementById('printSummaryBtn');
+            
+            let categoryChart = null;
+
+            findSchemesBtn.addEventListener('click', () => {
+                resultsSection.classList.remove('hidden');
+                resultsList.innerHTML = '';
+                noSchemesMessage.classList.add('hidden');
+                loaderContainer.classList.remove('hidden');
+                
+                window.scrollTo({ top: document.getElementById('calculator-section').offsetTop - 30, behavior: 'smooth' });
+
+                setTimeout(() => {
+                    const userProfile = {
+                        state: document.getElementById('state').value,
+                        annualIncome: document.getElementById('annualIncome').value ? parseInt(document.getElementById('annualIncome').value) : null,
+                        age: document.getElementById('age').value ? parseInt(document.getElementById('age').value) : null,
+                        gender: document.getElementById('gender').value,
+                        casteCategory: document.getElementById('casteCategory').value,
+                        disability: document.getElementById('disability').value === 'true',
+                        locationType: document.getElementById('locationType').value,
+                        professionSector: document.getElementById('professionSector').value,
+                        otherCriteria: Array.from(document.querySelectorAll('#otherCriteriaCheckboxes input:checked')).map(cb => cb.value)
+                    };
+
+                    const eligibleSchemes = schemesData.filter(scheme => isEligible(userProfile, scheme));
+                    
+                    loaderContainer.classList.add('hidden');
+                    displayResults(eligibleSchemes);
+                }, 1000);
+            });
+
+            printSummaryBtn.addEventListener('click', () => {
+                window.print();
+            });
+
+            function isEligible(user, scheme) {
+                const el = scheme.eligibility;
+
+                if (user.state !== 'Any' && scheme.state !== 'Central' && scheme.state !== user.state) return false;
+                
+                if (user.age !== null) {
+                    if (el.min_age !== null && user.age < el.min_age) return false;
+                    if (el.max_age !== null && user.age > el.max_age) return false;
+                }
+
+                if (user.annualIncome !== null) {
+                    if (el.min_income_annual !== null && user.annualIncome < el.min_income_annual) return false;
+                    if (el.max_income_annual !== null && user.annualIncome > el.max_income_annual) return false;
+                }
+
+                if (el.gender !== 'Any' && user.gender !== 'Any' && el.gender !== user.gender) return false;
+                
+                if (!el.caste_category.includes('Any') && user.casteCategory !== 'Any' && !el.caste_category.includes(user.casteCategory)) return false;
+                
+                // Special check for 'Backward Communities'
+                if (el.caste_category.includes("Backward Communities") && user.casteCategory !== 'SC' && user.casteCategory !== 'ST' && user.casteCategory !== 'OBC' && user.casteCategory !== 'SBC' && user.casteCategory !== 'VJNT') return false;
+
+                if (el.disability === true && user.disability === false) return false;
+
+                if (el.location_type !== 'Any' && user.locationType !== 'Any' && el.location_type !== user.locationType) return false;
+
+                if (!el.profession_sector.includes('Any') && user.professionSector !== 'Any' && !el.profession_sector.includes(user.professionSector)) return false;
+                
+                if (el.other_criteria && el.other_criteria.length > 0) {
+                    if (!el.other_criteria.every(crit => user.otherCriteria.includes(crit))) {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            function displayResults(schemes) {
+                resultsList.innerHTML = '';
+                
+                document.getElementById('total-schemes').textContent = schemes.length;
+                document.getElementById('central-schemes').textContent = schemes.filter(s => s.state === 'Central').length;
+                document.getElementById('maharashtra-schemes').textContent = schemes.filter(s => s.state === 'Maharashtra').length;
+
+                if (schemes.length === 0) {
+                    noSchemesMessage.classList.remove('hidden');
+                    if(categoryChart) categoryChart.destroy();
+                    filtersContainer.innerHTML = '';
+                    printSummaryBtn.classList.add('hidden');
+                    return;
+                }
+                
+                noSchemesMessage.classList.add('hidden');
+                printSummaryBtn.classList.remove('hidden');
+                
+                const categories = [...new Set(schemes.map(s => s.category))];
+                setupFilters(categories, schemes);
+                updateChart(schemes);
+
+                schemes.forEach(scheme => {
+                    const card = document.createElement('div');
+                    card.className = 'bg-white p-6 rounded-2xl card-shadow card-shadow-hover transition-all duration-300 cursor-pointer flex flex-col scheme-card';
+                    card.dataset.category = scheme.category;
+                    
+                    const stateColor = scheme.state === 'Central' ? 'bg-gray-100 text-gray-800' : 'bg-green-100 text-green-800';
+                    const categoryColor = 'bg-teal-100 text-teal-800';
+
+                    card.innerHTML = `
+                        <div class="flex-grow">
+                            <div class="flex justify-between items-start mb-3">
+                                <h3 class="text-xl font-bold text-slate-900 pr-4">${scheme.name}</h3>
+                                <span class="text-xs font-semibold px-2.5 py-1 rounded-full ${stateColor}">${scheme.state}</span>
+                            </div>
+                            <p class="text-slate-600 mb-4">${scheme.description}</p>
+                        </div>
+                        <div class="mt-auto pt-4 border-t border-slate-200">
+                             <div class="flex justify-between items-center">
+                                <span class="text-sm font-medium px-3 py-1 rounded-full ${categoryColor}">${scheme.category}</span>
+                                <span class="text-teal-600 font-semibold hover:text-teal-800">View Details &rarr;</span>
+                            </div>
+                        </div>
+                    `;
+                    card.addEventListener('click', () => openModal(scheme));
+                    resultsList.appendChild(card);
+                });
+            }
+            
+            function setupFilters(categories, allSchemes) {
+                filtersContainer.innerHTML = `
+                    <div class="flex items-center">
+                        <input id="filter-all" type="radio" name="filter" value="all" checked class="h-4 w-4 text-teal-500 border-slate-300 focus:ring-teal-500">
+                        <label for="filter-all" class="ml-2 text-sm font-medium text-slate-700">All Categories (${allSchemes.length})</label>
+                    </div>
+                `;
+                categories.sort().forEach(category => {
+                    const count = allSchemes.filter(s => s.category === category).length;
+                    const filterHTML = `
+                        <div class="flex items-center">
+                            <input id="filter-${category.replace(/\s/g, '-')}" type="radio" name="filter" value="${category}" class="h-4 w-4 text-teal-500 border-slate-300 focus:ring-teal-500">
+                            <label for="filter-${category.replace(/\s/g, '-')}" class="ml-2 text-sm font-medium text-slate-700">${category} (${count})</label>
+                        </div>
+                    `;
+                    filtersContainer.innerHTML += filterHTML;
+                });
+
+                document.querySelectorAll('input[name="filter"]').forEach(radio => {
+                    radio.addEventListener('change', (event) => {
+                        const selectedCategory = event.target.value;
+                        document.querySelectorAll('#results-list > div').forEach(card => {
+                            if (selectedCategory === 'all' || card.dataset.category === selectedCategory) {
+                                card.style.display = 'flex';
+                            } else {
+                                card.style.display = 'none';
+                            }
+                        });
+                    });
+                });
+            }
+
+            function updateChart(schemes) {
+                const categoryCounts = schemes.reduce((acc, scheme) => {
+                    acc[scheme.category] = (acc[scheme.category] || 0) + 1;
+                    return acc;
+                }, {});
+
+                const labels = Object.keys(categoryCounts);
+                const data = Object.values(categoryCounts);
+
+                const ctx = document.getElementById('categoryChart').getContext('2d');
+                if (categoryChart) {
+                    categoryChart.destroy();
+                }
+                categoryChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Schemes by Category',
+                            data: data,
+                            backgroundColor: [
+                                '#14b8a6', /* teal-500 */
+                                '#06b6d4', /* cyan-500 */
+                                '#22c55e', /* green-500 */
+                                '#eab308', /* yellow-500 */
+                                '#f97316', /* orange-500 */
+                                '#f43f5e', /* rose-500 */
+                                '#8b5cf6', /* violet-500 */
+                                '#4f46e5', /* indigo-500 */
+                                '#3b82f6', /* blue-500 */
+                                '#d946ef'  /* fuchsia-500 */
+                            ],
+                            borderColor: '#ffffff',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: {
+                            animateScale: true,
+                            animateRotate: true
+                        },
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    boxWidth: 12,
+                                    font: { size: 12 }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed !== null) {
+                                            label += context.parsed;
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        },
+                        onClick: (event, elements) => {
+                            if (elements.length > 0) {
+                                const clickedLabel = labels[elements[0].index];
+                                const filterRadio = document.querySelector(`input[value="${clickedLabel}"]`);
+                                if (filterRadio) {
+                                    filterRadio.checked = true;
+                                    filterRadio.dispatchEvent(new Event('change'));
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            async function getAiSummary(schemeName, description, benefits) {
+                const prompt = `As a helpful AI assistant specializing in government schemes, please explain the following scheme in simple, easy-to-understand language. Focus on its main purpose, who it's for, and the key benefits. Avoid jargon.
+
+                Scheme Name: ${schemeName}
+                Description: ${description}
+                Benefits: ${benefits}
+
+                Please provide a summary that is concise but informative, suitable for someone who is not familiar with government terminology.`;
+
+                let chatHistory = [];
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+                const payload = { contents: chatHistory };
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+                let retryCount = 0;
+                const maxRetries = 5;
+                const baseDelay = 1000;
+
+                while (retryCount < maxRetries) {
+                    try {
+                        const response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+
+                        if (!response.ok) {
+                            if (response.status === 429 && retryCount < maxRetries - 1) {
+                                const delay = baseDelay * Math.pow(2, retryCount);
+                                retryCount++;
+                                await new Promise(resolve => setTimeout(resolve, delay));
+                                continue;
+                            }
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+
+                        const result = await response.json();
+                        if (result.candidates && result.candidates.length > 0 &&
+                            result.candidates[0].content && result.candidates[0].content.parts &&
+                            result.candidates[0].content.parts.length > 0) {
+                            return result.candidates[0].content.parts[0].text;
+                        } else {
+                            throw new Error("Unexpected API response structure or missing content.");
+                        }
+                    } catch (error) {
+                        console.error("Error fetching AI summary:", error);
+                        if (retryCount < maxRetries - 1) {
+                            const delay = baseDelay * Math.pow(2, retryCount);
+                            retryCount++;
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                        } else {
+                            return "Sorry, I couldn't generate a summary at this time. Please try again later.";
+                        }
+                    }
+                }
+                return "Sorry, I couldn't generate a summary after multiple retries. Please try again later.";
+            }
+
+            function openModal(scheme) {
+                const modal = document.getElementById('schemeModal');
+                const modalContent = document.getElementById('modalContent');
+
+                const benefitDetails = `
+                    <p><strong class="font-semibold text-slate-700">Benefit Type:</strong> ${scheme.benefit.type}</p>
+                    ${scheme.benefit.amount_max ? `<p><strong class="font-semibold text-slate-700">Max Amount:</strong> ₹${scheme.benefit.amount_max.toLocaleString('en-IN')}</p>` : ''}
+                    ${scheme.benefit.percentage_max ? `<p><strong class="font-semibold text-slate-700">Max Percentage:</strong> ${scheme.benefit.percentage_max}%</p>` : ''}
+                    <p><strong class="font-semibold text-slate-700">Details:</strong> ${scheme.benefit.details}</p>
+                `;
+
+                const eligibilityDetails = `
+                    ${scheme.eligibility.min_age ? `<p><strong>Age:</strong> ${scheme.eligibility.min_age}${scheme.eligibility.max_age ? ` - ${scheme.eligibility.max_age}` : '+'}</p>`: ''}
+                    ${scheme.eligibility.max_income_annual ? `<p><strong>Max Annual Family Income:</strong> ₹${scheme.eligibility.max_income_annual.toLocaleString('en-IN')}</p>`: '<p><strong>Max Annual Family Income:</strong> No Limit</p>'}
+                    <p><strong>Gender:</strong> ${scheme.eligibility.gender}</p>
+                    <p><strong>Category:</strong> ${scheme.eligibility.caste_category.join(', ')}</p>
+                    <p><strong>Disability Requirement:</strong> ${scheme.eligibility.disability ? 'Yes' : 'No'}</p>
+                    <p><strong>Location:</strong> ${scheme.eligibility.location_type}</p>
+                    <p><strong>Profession:</strong> ${scheme.eligibility.profession_sector.join(', ')}</p>
+                    ${scheme.eligibility.other_criteria.length > 0 ? `<p><strong>Other Criteria:</strong> ${scheme.eligibility.other_criteria.join(', ')}</p>` : ''}
+                `;
+
+                modalContent.innerHTML = `
+                    <div class="p-6 md:p-8">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-2xl md:text-3xl font-bold text-slate-900">${scheme.name}</h2>
+                            <button id="closeModalBtn" class="text-slate-500 hover:text-slate-800 text-3xl leading-none font-light">&times;</button>
+                        </div>
+                        <div class="space-y-6 text-slate-700">
+                            <div>
+                                <h3 class="text-lg font-semibold border-b border-slate-200 pb-2 mb-3 text-slate-800">Objective</h3>
+                                <p>${scheme.description}</p>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="bg-slate-50 p-4 rounded-lg">
+                                    <h3 class="text-lg font-semibold mb-2 text-slate-800">Key Benefits</h3>
+                                    <div class="space-y-1">${benefitDetails}</div>
+                                </div>
+                                <div class="bg-slate-50 p-4 rounded-lg">
+                                    <h3 class="text-lg font-semibold mb-2 text-slate-800">Eligibility Criteria</h3>
+                                    <div class="space-y-1 text-sm">${eligibilityDetails}</div>
+                                </div>
+                            </div>
+                            <div class="mt-6 text-center">
+                                <button id="aiSummaryBtn" class="btn-primary py-2.5 px-6 rounded-lg text-base inline-flex items-center justify-center">
+                                    <span id="aiButtonText">✨ Ask AI Assistant</span>
+                                    <div id="aiLoader" class="loader w-5 h-5 ml-2 hidden"></div>
+                                </button>
+                            </div>
+                            <div id="ai-summary-section" class="mt-6 p-4 bg-teal-50 rounded-lg hidden">
+                                <h3 class="text-lg font-semibold text-teal-800 mb-2">AI Assistant's Summary</h3>
+                                <div id="aiSummaryContent" class="text-slate-700"></div>
+                            </div>
+                             <div class="text-center mt-6">
+                                <a href="${scheme.link}" target="_blank" rel="noopener noreferrer" class="inline-block bg-teal-600 text-white font-semibold py-2.5 px-6 rounded-lg hover:bg-teal-700 transition-colors duration-300">
+                                    Visit Official Scheme Page
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                
+                document.getElementById('closeModalBtn').addEventListener('click', () => {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                    document.getElementById('ai-summary-section').classList.add('hidden');
+                    document.getElementById('aiSummaryContent').innerHTML = '';
+                });
+
+                document.getElementById('aiSummaryBtn').addEventListener('click', async () => {
+                    const aiSummaryBtn = document.getElementById('aiSummaryBtn');
+                    const aiButtonText = document.getElementById('aiButtonText');
+                    const aiLoader = document.getElementById('aiLoader');
+                    const aiSummarySection = document.getElementById('ai-summary-section');
+                    const aiSummaryContent = document.getElementById('aiSummaryContent');
+
+                    aiButtonText.textContent = 'Generating...';
+                    aiLoader.classList.remove('hidden');
+                    aiSummaryBtn.disabled = true;
+                    aiSummaryContent.innerHTML = '';
+                    aiSummarySection.classList.remove('hidden');
+
+                    const summary = await getAiSummary(scheme.name, scheme.description, scheme.benefit.details);
+                    aiSummaryContent.innerHTML = summary.replace(/\n/g, '<br>');
+
+                    aiButtonText.textContent = '✨ Ask AI Assistant';
+                    aiLoader.classList.add('hidden');
+                    aiSummaryBtn.disabled = false;
+                });
+            }
+
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && !document.getElementById('schemeModal').classList.contains('hidden')) {
+                    document.getElementById('schemeModal').classList.add('hidden');
+                    document.getElementById('schemeModal').classList.remove('flex');
+                    document.getElementById('ai-summary-section').classList.add('hidden');
+                    document.getElementById('aiSummaryContent').innerHTML = '';
+                }
+            });
+             document.getElementById('schemeModal').addEventListener('click', (e) => {
+                if (e.target.id === 'schemeModal') {
+                    document.getElementById('schemeModal').classList.add('hidden');
+                    document.getElementById('schemeModal').classList.remove('flex');
+                    document.getElementById('ai-summary-section').classList.add('hidden');
+                    document.getElementById('aiSummaryContent').innerHTML = '';
+                }
+            });
+        });
+
+    </script>
+</body>
+</html>
